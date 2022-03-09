@@ -2,10 +2,13 @@ import csv
 from datetime import datetime
 import matplotlib.pyplot as plt
 
+from constants import DATA_PATH
+
 
 def power_curve(begin_date, end_date):
-    with open('/Users/efesabanoglu/Downloads/borusan_scada_harmanlik/borusan_scada_harmanlik_01.csv',
-              newline='') as csvfile:
+    with open(
+            DATA_PATH + '_01.' + SOURCE_FORMAT,
+            newline='') as csvfile:
         spamreader = csv.reader(csvfile)
         wind_speed = []
         power = []
