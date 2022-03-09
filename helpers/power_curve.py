@@ -2,7 +2,7 @@ import csv
 from datetime import datetime
 import matplotlib.pyplot as plt
 
-from constants import DATA_PATH
+from constants import DATA_PATH, SOURCE_FORMAT
 
 
 def power_curve(begin_date, end_date):
