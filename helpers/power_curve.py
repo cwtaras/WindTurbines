@@ -1,24 +1,19 @@
 import csv
 from datetime import datetime
 import matplotlib.pyplot as plt
+import pandas as pd
 
 from constants import DATA_PATH, SOURCE_FORMAT
 
 
 def power_curve(begin_date, end_date):
-    with open(
-            DATA_PATH + '_01.' + SOURCE_FORMAT,
-            newline='') as csvfile:
-        spamreader = csv.reader(csvfile)
-        wind_speed = []
-        power = []
-        i = 0
-        for row in spamreader:
-            if i != 0:
-                time = datetime.strptime(row[0], '%Y-%m-%d %H:%M:%S')
-                if begin_date < time < end_date:
-                    wind_speed.append(float(row[12]))
-                    power.append(float(row[47]))
-            i = i + 1
-    plt.plot(wind_speed, power)
+    df = pd.read_csv(DATA_PATH + '_01.' + SOURCE_FORMAT, index_col='PCTimeStamp', usecols=['PCTimeStamp', 'Grd_Prod_Pwr_Avg', 'Amb_WindSpeed_Avg', 'HCnt_Avg_Run'])
+    wind_speed = []
+    power = []
+    df = df[df["HCnt_Avg_Run"] >= 300]
+    for index, row in df.iterrows():
+        if begin_date < datetime.strptime(str(index), '%Y-%m-%d %H:%M:%S') < end_date:
+            wind_speed.append(float(row['Amb_WindSpeed_Avg']))
+            power.append(float(row['Grd_Prod_Pwr_Avg']))
+    plt.scatter(wind_speed, power, s=0.1, color='b')
     plt.show()
