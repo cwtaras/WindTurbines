@@ -57,20 +57,17 @@ def winddir_relative_avg_hours(begin_date, end_date):
 
 ################ Wind Direction Relative Avg. For All Turbines ########################
 def plotters1(begin_date, end_date, index, hcnt):
-    temp = []
-    timeList = []
     if index < 10:
         file = DATA_PATH + '_0' + str(index) + '.' + SOURCE_FORMAT
     else:
         file = DATA_PATH + '_' + str(index) + '.' + SOURCE_FORMAT
-    df = pd.read_csv(file, index_col='PCTimeStamp',
+    df = pd.read_csv(file,
                      usecols=['PCTimeStamp', 'Amb_WindDir_Relative_Avg', 'HCnt_Avg_Run'])
     df = df[df["HCnt_Avg_Run"] >= hcnt]
-    for i, row in df.iterrows():
-        if begin_date < datetime.strptime(str(i), '%Y-%m-%d %H:%M:%S') < end_date:
-            timeList.append(datetime.strptime(str(i), '%Y-%m-%d %H:%M:%S'))
-            temp.append(float(row['Amb_WindDir_Relative_Avg']))
-    plt.scatter(timeList, temp, color=COLORS[(index - 1) % 8], s=0.2)
+    df['PCTimeStamp'] = pd.to_datetime(df['PCTimeStamp'])
+    df = df[(df["PCTimeStamp"] >= begin_date)]
+    df = df[(df["PCTimeStamp"] <= end_date)]
+    plt.scatter(df["PCTimeStamp"], df["Amb_WindDir_Relative_Avg"], color=COLORS[(index - 1) % 8], s=0.2)
     print("Turbine " + str(index) + " has finished")
 
 
@@ -177,3 +174,7 @@ def hcnt_avg_run(begin_date, end_date, hcnt):
     power_curve(begin_date, end_date, hcnt)
     winddir_relative_avg(begin_date, end_date, hcnt)
     winddir_relative_avg_for_all_turbine(begin_date, end_date, hcnt)
+
+
+
+
