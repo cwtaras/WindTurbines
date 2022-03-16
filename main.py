@@ -14,3 +14,4 @@ if __name__ == '__main__':
     winddir_relative_avg(begin_date,end_date, 300)
     winddir_abs_vs_windspeed(begin_date, end_date)
     hcnt_avg_run(begin_date, end_date, hcnt)
+
