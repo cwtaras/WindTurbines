@@ -7,17 +7,13 @@ from constants import DATA_PATH, SOURCE_FORMAT, COLORS
 
 ################ Wind Direction Relative Avg. ########################
 def winddir_relative_avg(begin_date, end_date, hcnt):
-    df = pd.read_csv(DATA_PATH + '_01.' + SOURCE_FORMAT, index_col='PCTimeStamp',
+    df = pd.read_csv(DATA_PATH + '_01.' + SOURCE_FORMAT,
                      usecols=['PCTimeStamp', 'Amb_WindDir_Relative_Avg', 'HCnt_Avg_Run'])
     df = df[df["HCnt_Avg_Run"] >= hcnt]
-    timeList = []
-    winddir = []
-    for index, row in df.iterrows():
-        time = datetime.strptime(str(index), '%Y-%m-%d %H:%M:%S')
-        if begin_date < time < end_date:
-            timeList.append(time)
-            winddir.append(float(row['Amb_WindDir_Relative_Avg']))
-    plt.scatter(timeList, winddir, s=0.2)
+    df['PCTimeStamp'] = pd.to_datetime(df['PCTimeStamp'])
+    df = df[begin_date <= df['PCTimeStamp']]
+    df = df[df['PCTimeStamp'] <= end_date]
+    plt.scatter(df['PCTimeStamp'], df['Amb_WindDir_Relative_Avg'], s=0.2)
     plt.xticks(rotation=90)
     plt.xlabel("Time")
     plt.ylabel("Rel. Wind Dir")
@@ -177,3 +173,80 @@ def hcnt_avg_run(begin_date, end_date, hcnt):
     power_curve(begin_date, end_date, hcnt)
     winddir_relative_avg(begin_date, end_date, hcnt)
     winddir_relative_avg_for_all_turbine(begin_date, end_date, hcnt)
+
+################ Yaw Misalignment Avg. Comprasion ################
+def turbine_yaw_avg_comprasion(begin_date, end_date):
+
+    df = pd.read_csv(DATA_PATH + '_01.' + SOURCE_FORMAT,
+                     usecols=['PCTimeStamp', 'Amb_WindDir_Relative_Avg', 'HCnt_Avg_Run'])
+    df = df[df["HCnt_Avg_Run"] >= 300]
+    df = df[["PCTimeStamp","Amb_WindDir_Relative_Avg"]]
+    df["Amb_WindDir_Relative_Avg"] = pd.to_numeric(df["Amb_WindDir_Relative_Avg"], downcast="float")
+    df['PCTimeStamp'] = pd.to_datetime(df['PCTimeStamp'])
+    df = df[(begin_date <= df['PCTimeStamp']) & (df['PCTimeStamp'] <= end_date) ]
+
+    # df = df[begin_date <= pd.to_datetime(df['PCTimeStamp'])]
+    # df = df[pd.to_datetime(df['PCTimeStamp']) <= end_date]
+
+    for i in range(2, 17):
+        if i < 10:
+            file = DATA_PATH + '_0' + str(i) + '.' + SOURCE_FORMAT
+        else:
+            file = DATA_PATH + '_' + str(i) + '.' + SOURCE_FORMAT
+
+        df_temp = pd.read_csv(file,
+                              usecols=['PCTimeStamp', 'Amb_WindDir_Relative_Avg', 'HCnt_Avg_Run'])
+
+        df_temp = df_temp[df_temp["HCnt_Avg_Run"] >= 300]
+        df_temp["Amb_WindDir_Relative_Avg"] = pd.to_numeric(df_temp["Amb_WindDir_Relative_Avg"], downcast="float")
+        df_temp['PCTimeStamp'] = pd.to_datetime(df_temp['PCTimeStamp'])
+        df_temp = df_temp[(begin_date <= df_temp['PCTimeStamp']) & (df_temp['PCTimeStamp'] <= end_date) ]
+        df_temp = df_temp[["PCTimeStamp", "Amb_WindDir_Relative_Avg"]]
+        df = pd.concat([df, df_temp], axis=0)
+
+        print(str(i) + "   finished")
+
+    df = df.groupby(df['PCTimeStamp']).mean()
+    print("grouped")
+    plt.plot(df.index.values, df["Amb_WindDir_Relative_Avg"])
+    plt.show()
+
+def all_turbines_yaw_misaligment(begin_date, end_date):
+
+    df = pd.read_csv(DATA_PATH + '_01.' + SOURCE_FORMAT,
+                     usecols=['PCTimeStamp', 'Amb_WindDir_Relative_Avg', 'HCnt_Avg_Run'])
+    df = df[df["HCnt_Avg_Run"] >= 300]
+    df = df[["PCTimeStamp","Amb_WindDir_Relative_Avg"]]
+    df["Amb_WindDir_Relative_Avg"] = pd.to_numeric(df["Amb_WindDir_Relative_Avg"], downcast="float")
+
+    # df = df[begin_date <= pd.to_datetime(df['PCTimeStamp'])]
+    # df = df[pd.to_datetime(df['PCTimeStamp']) <= end_date]
+
+    for i in range(2, 17):
+        if i < 10:
+            file = DATA_PATH + '_0' + str(i) + '.' + SOURCE_FORMAT
+        else:
+            file = DATA_PATH + '_' + str(i) + '.' + SOURCE_FORMAT
+
+        df_temp = pd.read_csv(file,
+                              usecols=['PCTimeStamp', 'Amb_WindDir_Relative_Avg', 'HCnt_Avg_Run'])
+
+        df_temp = df_temp[df_temp["HCnt_Avg_Run"] >= 300]
+        df_temp["Amb_WindDir_Relative_Avg"] = pd.to_numeric(df_temp["Amb_WindDir_Relative_Avg"], downcast="float")
+        df_temp = df_temp[["PCTimeStamp", "Amb_WindDir_Relative_Avg"]]
+        df = pd.concat([df, df_temp], axis=0)
+
+        print(str(i) + "   finished")
+
+    df["zscore"] = (df["Amb_WindDir_Relative_Avg"] - df["Amb_WindDir_Relative_Avg"].mean()) / df[
+        "Amb_WindDir_Relative_Avg"].std(ddof=0)
+    df['PCTimeStamp'] = pd.to_datetime(df['PCTimeStamp'])
+    df = df[(begin_date <= df['PCTimeStamp']) & (df['PCTimeStamp'] <= end_date)]
+    df = df[(abs(df["zscore"]) > 2)]
+    df = df.groupby(df['PCTimeStamp']).mean()
+    print("grouped")
+    plt.scatter(df.index.values, df["Amb_WindDir_Relative_Avg"])
+    plt.show()
+
+
+
