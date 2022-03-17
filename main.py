@@ -1,9 +1,10 @@
 from helpers.basic_figures import *
 from datetime import datetime
+from helpers.first_sanity_checks import *
 
 if __name__ == '__main__':
-    begin_date = datetime(2021, 1, 1, 00, 00)
-    end_date = datetime(2021, 1, 8, 00, 00)
+    begin_date = datetime(2020, 12, 1, 00, 00)
+    end_date = datetime(2020, 12, 8, 23, 50)
     hcnt = 100
 
     # 1 week data
@@ -16,3 +17,9 @@ if __name__ == '__main__':
     # hcnt_avg_run(begin_date, end_date, hcnt)
     # turbine_yaw_avg_comprasion(begin_date, end_date)
     # all_turbines_yaw_misaligment(begin_date, end_date)
+    # speed_to_relative_avg(begin_date, end_date, hcnt)
+    # turbine_yaw_avg_comprasion(begin_date, end_date)
+    # all_turbines_yaw_misaligment(begin_date, end_date)
+    yaw_misaligment_min_max(begin_date, end_date)
+
+
