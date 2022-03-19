@@ -146,7 +146,7 @@ def power_curve_sanity_check(begin_date, end_date, hcnt):
     df.set_index('Amb_WindSpeed_Avg', inplace=True)
     df = pd.merge(df, avg_df, left_index=True, right_index=True, how='left')
     df["zscore"] = (df["Grd_Prod_Pwr_Avg"] - df["average_power"]) / df["standart_deviaton"]
-    df = df[df["zscore"] >= 3]
+    df = df[abs(df["zscore"]) >= 3]
     fig, ax = plt.subplots()
     df.reset_index().plot("Amb_WindSpeed_Avg","Grd_Prod_Pwr_Avg", kind='scatter', ax=ax, c='red', marker='x')
     plt.show()
