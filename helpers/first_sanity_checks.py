@@ -2,7 +2,7 @@ from datetime import datetime
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from constants import DATA_PATH, SOURCE_FORMAT, COLORS
+from constants import DATA_PATH, SOURCE_FORMAT, COLORS, DATA_PATH_EFE
 
 
 # Wind speed-dependent table. Calculate the observed yaw
@@ -133,3 +133,23 @@ def yaw_misaligment_min_max(begin_date, end_date):
     plt.plot(dfs_lst[15]['PCTimeStamp'], dfs_lst[15]["Amb_WindDir_Relative_Avg"], color="black", linewidth=0.4)
     plt.xticks(rotation=90)
     plt.show()
+
+#Power Curve : Rüzgar Hızı / Üretilen power grafiğinden sapan datalar hata bildirir.( Buzlanma vs. olabilir)
+def power_curve_sanity_check(begin_date, end_date, hcnt):
+    df = pd.read_csv(DATA_PATH_EFE + '_01.' + SOURCE_FORMAT,
+                     usecols=['PCTimeStamp', 'Grd_Prod_Pwr_Avg', 'Amb_WindSpeed_Avg', 'HCnt_Avg_Run'])
+    df = df[df["HCnt_Avg_Run"] >= hcnt]
+    avg_df = df[["Grd_Prod_Pwr_Avg", "Amb_WindSpeed_Avg"]].groupby(df['Amb_WindSpeed_Avg']).agg(average_power=pd.NamedAgg(column="Grd_Prod_Pwr_Avg", aggfunc="mean"),
+                                                                                                standart_deviaton=pd.NamedAgg(column="Grd_Prod_Pwr_Avg", aggfunc="std"))
+    df['PCTimeStamp'] = pd.to_datetime(df['PCTimeStamp'])
+    df = df[(df["PCTimeStamp"] >= begin_date) & (df["PCTimeStamp"] <= end_date)]
+    df.set_index('Amb_WindSpeed_Avg', inplace=True)
+    df = pd.merge(df, avg_df, left_index=True, right_index=True, how='left')
+    df["zscore"] = (df["Grd_Prod_Pwr_Avg"] - df["average_power"]) / df["standart_deviaton"]
+    df = df[df["zscore"] >= 3]
+    fig, ax = plt.subplots()
+    df.reset_index().plot("Amb_WindSpeed_Avg","Grd_Prod_Pwr_Avg", kind='scatter', ax=ax, c='red', marker='x')
+    plt.show()
+    pd.set_option('display.max_rows', None)
+    pd.set_option('display.max_columns', None)
+    print(df)
