@@ -21,6 +21,6 @@ if __name__ == '__main__':
     # turbine_yaw_avg_comprasion(begin_date, end_date)
     # all_turbines_yaw_misaligment(begin_date, end_date)
     #yaw_misaligment_min_max(begin_date, end_date)
-    power_curve_sanity_check(begin_date,end_date, hcnt)
-
-
+    #power_curve_sanity_check(begin_date,end_date, hcnt)
+    rpm_yaw_misalignment(begin_date,end_date)
+    

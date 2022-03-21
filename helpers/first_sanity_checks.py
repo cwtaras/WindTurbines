@@ -153,3 +153,38 @@ def power_curve_sanity_check(begin_date, end_date, hcnt):
     pd.set_option('display.max_rows', None)
     pd.set_option('display.max_columns', None)
     print(df)
+
+def rpm_yaw_misalignment(begin_date, end_date):
+    df = pd.read_csv(DATA_PATH_EFE + '_01.' + SOURCE_FORMAT,
+                     usecols=['PCTimeStamp', 'Rtr_RPM_Avg', 'HCnt_Avg_Run', 'Amb_WindSpeed_Avg'])
+    df = df[(df["HCnt_Avg_Run"] >= 300) & (df["Amb_WindSpeed_Avg"] < 11) & (df["Amb_WindSpeed_Avg"] > 1)]
+    df = df[["PCTimeStamp", "Rtr_RPM_Avg"]]
+    df["Rtr_RPM_Avg"] = pd.to_numeric(df["Rtr_RPM_Avg"], downcast="float")
+
+    #for other turbines
+    for i in range(2, 17):
+        if i < 10:
+            file = DATA_PATH_EFE + '_0' + str(i) + '.' + SOURCE_FORMAT
+        else:
+            file = DATA_PATH_EFE + '_' + str(i) + '.' + SOURCE_FORMAT
+
+        df_temp = pd.read_csv(file,
+                              usecols=['PCTimeStamp', 'Rtr_RPM_Avg', 'HCnt_Avg_Run', 'Amb_WindSpeed_Avg'])
+
+        df_temp = df_temp[df_temp["HCnt_Avg_Run"] >= 300 & (df_temp["Amb_WindSpeed_Avg"] < 11) & (df_temp["Amb_WindSpeed_Avg"] > 1)]
+        df_temp["Rtr_RPM_Avg"] = pd.to_numeric(df_temp["Rtr_RPM_Avg"], downcast="float")
+        df_temp = df_temp[["PCTimeStamp", "Rtr_RPM_Avg"]]
+        df = pd.concat([df, df_temp], axis=0)
+
+        print(str(i) + "   finished")
+    print(df["Rtr_RPM_Avg"].mean())
+    print(df[
+        "Rtr_RPM_Avg"].std(ddof=0))
+    df["zscore"] = (df["Rtr_RPM_Avg"] - df["Rtr_RPM_Avg"].mean()) / df[
+        "Rtr_RPM_Avg"].std(ddof=0)
+    df['PCTimeStamp'] = pd.to_datetime(df['PCTimeStamp'])
+    df = df[(begin_date <= df['PCTimeStamp']) & (df['PCTimeStamp'] <= end_date)]
+    df = df[(abs(df["zscore"]) > 1)]
+    df = df.groupby(df['PCTimeStamp']).mean()
+    plt.scatter(df.index.values, df["Rtr_RPM_Avg"])
+    plt.show()
