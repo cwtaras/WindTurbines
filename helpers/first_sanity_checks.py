@@ -188,3 +188,52 @@ def rpm_yaw_misalignment(begin_date, end_date):
     df = df.groupby(df['PCTimeStamp']).mean()
     plt.scatter(df.index.values, df["Rtr_RPM_Avg"])
     plt.show()
+
+def rpm_yaw_bins(begin_date, end_date, s_begin_date, s_end_date):
+    dict = {}
+
+    for i in range(1, 17):
+        if i < 10:
+            file = DATA_PATH + '_0' + str(i) + '.' + SOURCE_FORMAT
+        else:
+            file = DATA_PATH + '_' + str(i) + '.' + SOURCE_FORMAT
+
+        df = pd.read_csv(file, usecols=['PCTimeStamp', 'Rtr_RPM_Avg','Amb_WindSpeed_Avg', 'Amb_WindDir_Relative_Avg', 'HCnt_Avg_Run'])
+        df = df[df["HCnt_Avg_Run"] >= 300]
+        df = df[df["Amb_WindSpeed_Avg"] < 11]
+        df = df[df["Amb_WindSpeed_Avg"] > 1]
+        df = df[['PCTimeStamp', 'Amb_WindDir_Relative_Avg', 'Rtr_RPM_Avg','Amb_WindSpeed_Avg']]
+        df['PCTimeStamp'] = pd.to_datetime(df['PCTimeStamp'])
+        df = df[(begin_date <= df['PCTimeStamp']) & (df['PCTimeStamp'] <= end_date)]
+        for index, row in df.iterrows():
+            if row['Amb_WindSpeed_Avg'] in dict.keys():
+                if row['Amb_WindDir_Relative_Avg'] in dict[row['Amb_WindSpeed_Avg']].keys():
+                    dict[row['Amb_WindSpeed_Avg']][row['Amb_WindDir_Relative_Avg']].append(row['Rtr_RPM_Avg'])
+                else:
+                    dict[row['Amb_WindSpeed_Avg']][row['Amb_WindDir_Relative_Avg']] = []
+                    dict[row['Amb_WindSpeed_Avg']][row['Amb_WindDir_Relative_Avg']].append(row['Rtr_RPM_Avg'])
+            else:
+                dict[row['Amb_WindSpeed_Avg']] = {}
+                dict[row['Amb_WindSpeed_Avg']][row['Amb_WindDir_Relative_Avg']] = []
+                dict[row['Amb_WindSpeed_Avg']][row['Amb_WindDir_Relative_Avg']].append(row['Rtr_RPM_Avg'])
+
+        print(str(i) + "   finished")
+
+    for k,v in dict.items():
+        for k1, v1 in v.items():
+            dict[k][k1] = sum(v1) / len(v1)
+
+    df2 = pd.read_csv(DATA_PATH + '_01.' + SOURCE_FORMAT,
+                     usecols=['PCTimeStamp', 'Rtr_RPM_Avg', 'HCnt_Avg_Run','Amb_WindDir_Relative_Avg', 'Amb_WindSpeed_Avg'])
+    df2 = df2[df2["HCnt_Avg_Run"] >= 300]
+    df2 = df2[df2["Amb_WindSpeed_Avg"] < 11]
+    df2 = df2[df2["Amb_WindSpeed_Avg"] > 1]
+    df2 = df2[['PCTimeStamp', 'Amb_WindDir_Relative_Avg', 'Rtr_RPM_Avg', 'Amb_WindSpeed_Avg']]
+    df2['PCTimeStamp'] = pd.to_datetime(df2['PCTimeStamp'])
+    df2 = df2[(s_begin_date <= df2['PCTimeStamp']) & (df2['PCTimeStamp'] <= s_end_date)]
+
+    for index, row in df2.iterrows():
+        try:
+            print(str(row['PCTimeStamp']) + "   expected rpm: " + "{:.2f}".format(dict[row['Amb_WindSpeed_Avg']][row['Amb_WindDir_Relative_Avg']]) + "    actual: " + str(row['Rtr_RPM_Avg']))
+        except:
+            continue
