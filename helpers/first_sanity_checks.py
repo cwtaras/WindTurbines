@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import plotly.express as px
 from constants import DATA_PATH, SOURCE_FORMAT, COLORS, DATA_PATH_EFE
-
+pd.set_option('display.max_columns', None)
 
 # Wind speed-dependent table. Calculate the observed yaw
 # misalignment for each wind speed and adjust each value in the table
@@ -28,6 +28,7 @@ def speed_to_relative_avg(begin_date, end_date, hcnt):
         df['PCTimeStamp'] = pd.to_datetime(df['PCTimeStamp'])
         df = df[(df["PCTimeStamp"] >= begin_date) & (df["PCTimeStamp"] <= end_date) &
                 (abs(df["zscore"]) > 5) & (df["Amb_WindSpeed_Avg"] > 5)]
+        df = df[["Amb_WindSpeed_Avg", "Amb_WindDir_Relative_Avg", "mean", "std","zscore"]]
         pickle.dump(df, open(f"{str(begin_date.strftime('%Y%b%d'))}_{str(end_date.strftime('%Y%b%d'))}_speed_relative_avg.pickle", "wb"))
     fig, ax = plt.subplots()
     df.plot("Amb_WindSpeed_Avg", "Amb_WindDir_Relative_Avg", kind='scatter', ax=ax, c='red', marker='x')
@@ -36,13 +37,13 @@ def speed_to_relative_avg(begin_date, end_date, hcnt):
     plt.show()
     end = time.time()
     print("finished in:" + str(end-before))
+    print(df)
 
-# 10 days interval 2020-1-1
+# 1 year interval 2020-1-1
 # All turbines are taken consideration and if some different relative average, it can be seem.
 def all_turbines_yaw_misaligment(begin_date, end_date):
     # master df
-    f = plt.figure()
-    f, (ax1,ax2) = plt.subplots(nrows=2, ncols=1)
+    f, (ax1, ax2) = plt.subplots(nrows=2, ncols=1)
     ax1.set_title('16 tribune')
     ax2.set_title('Errors')
     try:
@@ -77,13 +78,18 @@ def all_turbines_yaw_misaligment(begin_date, end_date):
             ax1.plot(df_temp["PCTimeStamp"], df_temp["Amb_WindDir_Relative_Avg"], color=COLORS[(i - 1) % 8])
             df = pd.concat([df, df_temp], axis=0)
             print(str(i) + "   finished")
-
-        df["zscore"] = (df["Amb_WindDir_Relative_Avg"] - df["Amb_WindDir_Relative_Avg"].mean()) / df[
-            "Amb_WindDir_Relative_Avg"].std(ddof=0)
-        df = df[(abs(df["zscore"]) > 2)]
-        df = df.groupby(df['PCTimeStamp']).mean()
+        avg_df = df[["PCTimeStamp", "Amb_WindDir_Relative_Avg"]].groupby(df['PCTimeStamp']).agg(
+            average_power=pd.NamedAgg(column="Amb_WindDir_Relative_Avg", aggfunc="mean"),
+            standart_deviaton=pd.NamedAgg(column="Amb_WindDir_Relative_Avg", aggfunc="std"))
+        df.set_index('PCTimeStamp', inplace=True)
+        df = pd.merge(df, avg_df, left_index=True, right_index=True, how='left')
+        df["zscore"] = (df["Amb_WindDir_Relative_Avg"] - df["average_power"]) / df[
+            "standart_deviaton"]
+        df = df[(abs(df["zscore"]) > 3.7)]
         pickle.dump(df, open(f"{str(begin_date.strftime('%Y%b%d'))}_{str(end_date.strftime('%Y%b%d'))}_all_tribunes_yaw_misaligment.pickle", "wb"))
+    print(df)
     ax2.scatter(df.index.values, df["Amb_WindDir_Relative_Avg"], c='red')
+    ax2.plot(df.index.values, df["average_power"], c='blue')
     plt.gcf().autofmt_xdate()
     plt.show()
 
@@ -175,7 +181,7 @@ def power_curve_sanity_check(begin_date, end_date, hcnt):
     except (OSError, IOError) as e:
         df = pd.read_csv(DATA_PATH_EFE + '_01.' + SOURCE_FORMAT,
                          usecols=['PCTimeStamp', 'Grd_Prod_Pwr_Avg', 'Amb_WindSpeed_Avg', 'HCnt_Avg_Run'])
-        df = df[df["HCnt_Avg_Run"] >= hcnt]
+        df = df[(df["HCnt_Avg_Run"] >= hcnt) & (df["Amb_WindSpeed_Avg"] >= 5)]
         avg_df = df[["Grd_Prod_Pwr_Avg", "Amb_WindSpeed_Avg"]].groupby(df['Amb_WindSpeed_Avg']).agg(average_power=pd.NamedAgg(column="Grd_Prod_Pwr_Avg", aggfunc="mean"),
                                                                                                     standart_deviaton=pd.NamedAgg(column="Grd_Prod_Pwr_Avg", aggfunc="std"))
         df['PCTimeStamp'] = pd.to_datetime(df['PCTimeStamp'])
@@ -186,6 +192,7 @@ def power_curve_sanity_check(begin_date, end_date, hcnt):
         df = df[abs(df["zscore"]) >= 3]
         pickle.dump(df, open(f"{str(begin_date.strftime('%Y%b%d'))}_{str(end_date.strftime('%Y%b%d'))}_power_curve.pickle", "wb"))
     fig, ax = plt.subplots()
+    print(df)
     df.reset_index().plot("Amb_WindSpeed_Avg","Grd_Prod_Pwr_Avg", kind='scatter', ax=ax, c='red', marker='x')
     df.reset_index().plot("Amb_WindSpeed_Avg","average_power", ax=ax, c='blue')
     plt.show()
@@ -194,41 +201,47 @@ def power_curve_sanity_check(begin_date, end_date, hcnt):
     end = time.time()
     print("finished in: " + str(end-before))
 
-# 10 days interval
+# 1 year interval
 # If wind-tribunes are well-aligned, in our case it is, their rpm should be close.
 # if it is not, there may be yaw error.
 def rpm_yaw_misalignment(begin_date, end_date):
-    df = pd.read_csv(DATA_PATH_EFE + '_01.' + SOURCE_FORMAT,
-                     usecols=['PCTimeStamp', 'Rtr_RPM_Avg', 'HCnt_Avg_Run', 'Amb_WindSpeed_Avg'])
-    df = df[(df["HCnt_Avg_Run"] >= 300) & (df["Amb_WindSpeed_Avg"] < 11) & (df["Amb_WindSpeed_Avg"] > 1)]
-    df = df[["PCTimeStamp", "Rtr_RPM_Avg"]]
-    df["Rtr_RPM_Avg"] = pd.to_numeric(df["Rtr_RPM_Avg"], downcast="float")
+    try:
+        df = pickle.load(open(
+            f"{str(begin_date.strftime('%Y%b%d'))}_{str(end_date.strftime('%Y%b%d'))}_rpm_yaw_misalignment.pickle",
+            "rb"))
+    except (OSError, IOError) as e:
+        df = pd.read_csv(DATA_PATH_EFE + '_01.' + SOURCE_FORMAT,
+                         usecols=['PCTimeStamp', 'Rtr_RPM_Avg', 'HCnt_Avg_Run', 'Amb_WindSpeed_Avg'])
+        df = df[(df["HCnt_Avg_Run"] >= 300) & (df["Amb_WindSpeed_Avg"] < 11) & (df["Amb_WindSpeed_Avg"] > 1)]
+        df = df[["PCTimeStamp", "Rtr_RPM_Avg"]]
+        df["Rtr_RPM_Avg"] = pd.to_numeric(df["Rtr_RPM_Avg"], downcast="float")
 
-    #for other turbines
-    for i in range(2, 17):
-        if i < 10:
-            file = DATA_PATH_EFE + '_0' + str(i) + '.' + SOURCE_FORMAT
-        else:
-            file = DATA_PATH_EFE + '_' + str(i) + '.' + SOURCE_FORMAT
+        #for other turbines
+        for i in range(2, 17):
+            if i < 10:
+                file = DATA_PATH_EFE + '_0' + str(i) + '.' + SOURCE_FORMAT
+            else:
+                file = DATA_PATH_EFE + '_' + str(i) + '.' + SOURCE_FORMAT
 
-        df_temp = pd.read_csv(file,
-                              usecols=['PCTimeStamp', 'Rtr_RPM_Avg', 'HCnt_Avg_Run', 'Amb_WindSpeed_Avg'])
+            df_temp = pd.read_csv(file,
+                                  usecols=['PCTimeStamp', 'Rtr_RPM_Avg', 'HCnt_Avg_Run', 'Amb_WindSpeed_Avg'])
 
-        df_temp = df_temp[df_temp["HCnt_Avg_Run"] >= 300 & (df_temp["Amb_WindSpeed_Avg"] < 11) & (df_temp["Amb_WindSpeed_Avg"] > 1)]
-        df_temp["Rtr_RPM_Avg"] = pd.to_numeric(df_temp["Rtr_RPM_Avg"], downcast="float")
-        df_temp = df_temp[["PCTimeStamp", "Rtr_RPM_Avg"]]
-        df = pd.concat([df, df_temp], axis=0)
-        print(str(i) + "   finished")
+            df_temp = df_temp[df_temp["HCnt_Avg_Run"] >= 300 & (df_temp["Amb_WindSpeed_Avg"] < 11) & (df_temp["Amb_WindSpeed_Avg"] > 1)]
+            df_temp["Rtr_RPM_Avg"] = pd.to_numeric(df_temp["Rtr_RPM_Avg"], downcast="float")
+            df_temp = df_temp[["PCTimeStamp", "Rtr_RPM_Avg"]]
+            df = pd.concat([df, df_temp], axis=0)
+            print(str(i) + "   finished")
 
-    df['PCTimeStamp'] = pd.to_datetime(df['PCTimeStamp'])
-    df = df[(begin_date <= df['PCTimeStamp']) & (df['PCTimeStamp'] <= end_date)]
-    avg_df = df[["PCTimeStamp", "Rtr_RPM_Avg"]].groupby(df['PCTimeStamp']).agg(
-        average_power=pd.NamedAgg(column="Rtr_RPM_Avg", aggfunc="mean"),
-        standart_deviaton=pd.NamedAgg(column="Rtr_RPM_Avg", aggfunc="std"))
-    df.set_index('PCTimeStamp', inplace=True)
-    df = pd.merge(df, avg_df, left_index=True, right_index=True, how='left')
-    df["zscore"] = (df["Rtr_RPM_Avg"] - df["average_power"]) / df["standart_deviaton"]
-    df = df[(abs(df["zscore"]) > 3.7)]
+        df['PCTimeStamp'] = pd.to_datetime(df['PCTimeStamp'])
+        df = df[(begin_date <= df['PCTimeStamp']) & (df['PCTimeStamp'] <= end_date)]
+        avg_df = df[["PCTimeStamp", "Rtr_RPM_Avg"]].groupby(df['PCTimeStamp']).agg(
+            average_power=pd.NamedAgg(column="Rtr_RPM_Avg", aggfunc="mean"),
+            standart_deviaton=pd.NamedAgg(column="Rtr_RPM_Avg", aggfunc="std"))
+        df.set_index('PCTimeStamp', inplace=True)
+        df = pd.merge(df, avg_df, left_index=True, right_index=True, how='left')
+        df["zscore"] = (df["Rtr_RPM_Avg"] - df["average_power"]) / df["standart_deviaton"]
+        df = df[(abs(df["zscore"]) > 3.7)]
+        pickle.dump(df, open(f"{str(begin_date.strftime('%Y%b%d'))}_{str(end_date.strftime('%Y%b%d'))}_rpm_yaw_misalignment.pickle", "wb"))
     plt.scatter(df.index.values, df["Rtr_RPM_Avg"], c='red')
     plt.plot(df.index.values, df["average_power"], c='blue')
     plt.show()
