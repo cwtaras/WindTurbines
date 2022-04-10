@@ -2,12 +2,12 @@ from datetime import datetime
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from constants import DATA_PATH, SOURCE_FORMAT, COLORS
+from constants import DATA_PATH, SOURCE_FORMAT, COLORS, DATA_PATH_EFE
 
 
 ################ Wind Direction Relative Avg. ########################
 def winddir_relative_avg(begin_date, end_date, hcnt):
-    df = pd.read_csv(DATA_PATH + '_01.' + SOURCE_FORMAT,
+    df = pd.read_csv(DATA_PATH_EFE + '_01.' + SOURCE_FORMAT,
                      usecols=['PCTimeStamp', 'Amb_WindDir_Relative_Avg', 'HCnt_Avg_Run'])
     df = df[df["HCnt_Avg_Run"] >= hcnt]
     df['PCTimeStamp'] = pd.to_datetime(df['PCTimeStamp'])
@@ -120,7 +120,7 @@ def winddir_abs_vs_windspeed(begin_date, end_date):
 
     fig, ax = plt.subplots()
     ax.plot(timeList, winddir, color="red")
-    ax.tick_params(axis='x',labelrotation=90)
+    ax.tick_paraFms(axis='x',labelrotation=90)
     ax.set_xlabel("Time")
     ax.set_ylabel("Abs. Wind Dir", color="red")
 
