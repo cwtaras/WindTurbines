@@ -23,8 +23,14 @@ if __name__ == '__main__':
     # all_turbines_yaw_misaligment(begin_date, end_date)
     # speed_to_relative_avg(begin_date, end_date, hcnt)
     # turbine_yaw_avg_comprasion(begin_date, end_date)
-    # all_turbines_yaw_misaligment(begin_date, end_date)
+    # rpm_yaw_bins(begin_date, end_date, s_begin_date, s_end_date)
     # yaw_misaligment_min_max(begin_date, end_date)
+
+    # below from here
+    # all_turbines_yaw_misaligment(begin_date, end_date)
+
+    # speed_to_relative_avg(begin_date, end_date, hcnt)
+
     # df = pd.DataFrame(columns=['PCTimeStamp', 'Grd_Prod_Pwr_Avg', 'Amb_WindSpeed_Avg', 'HCnt_Avg_Run', 'Rtr_RPM_Avg', 'turbine_no'])
     # df = power_curve_sanity_check(begin_date,end_date, hcnt, '_01')
     # for i in range(2, 17):
@@ -34,5 +40,8 @@ if __name__ == '__main__':
     #         df = pd.concat((df, power_curve_sanity_check(begin_date,end_date, hcnt, ('_' + str(i)))), axis=0)
     #     print(str(i) + "   finished")
     # rpm_yaw_misalignment(begin_date, end_date, df)
-    rpm_yaw_misalignment(begin_date, end_date)
-    # rpm_yaw_bins(begin_date, end_date, s_begin_date, s_end_date)
+
+    #rpm_yaw_misalignment(begin_date, end_date)
+
+
+
