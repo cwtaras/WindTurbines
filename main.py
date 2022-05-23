@@ -29,7 +29,7 @@ if __name__ == '__main__':
     # below from here
     # all_turbines_yaw_misaligment(begin_date, end_date)
 
-    # speed_to_relative_avg(begin_date, end_date, hcnt)
+    #speed_to_relative_avg(begin_date, end_date, hcnt)
 
     # df = pd.DataFrame(columns=['PCTimeStamp', 'Grd_Prod_Pwr_Avg', 'Amb_WindSpeed_Avg', 'HCnt_Avg_Run', 'Rtr_RPM_Avg', 'turbine_no'])
     # df = power_curve_sanity_check(begin_date,end_date, hcnt, '_01')
@@ -40,8 +40,9 @@ if __name__ == '__main__':
     #         df = pd.concat((df, power_curve_sanity_check(begin_date,end_date, hcnt, ('_' + str(i)))), axis=0)
     #     print(str(i) + "   finished")
     # rpm_yaw_misalignment(begin_date, end_date, df)
-
+    #run(begin_date, end_date,"speed_to_relative_avg", "power_curve_sanity_check", "rpm_yaw_misalignment", "all_turbines_yaw_misaligment",  hcnt=300)
+    run(begin_date, end_date, "all_turbines_yaw_misaligment", hcnt=300)
+    #run(begin_date, end_date, "speed_to_relative_avg", hcnt=300)
+    #run(begin_date, end_date, "power_curve_sanity_check", hcnt=300)
     #rpm_yaw_misalignment(begin_date, end_date)
-
-
 
