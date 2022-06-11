@@ -1,11 +1,12 @@
 from helpers.basic_figures import *
 from datetime import datetime
 from helpers.first_sanity_checks import *
+from helpers.anomaly import *
 import pandas as pd
 
 if __name__ == '__main__':
     begin_date = datetime(2020, 1, 1, 00, 00)
-    end_date = datetime(2020, 12, 30, 23, 50)
+    end_date = datetime(2020, 1, 7, 23, 50)
 
     s_begin_date = datetime(2021, 1, 1, 00, 00)
     s_end_date = datetime(2021, 1, 7, 23, 50)
@@ -41,8 +42,13 @@ if __name__ == '__main__':
     #     print(str(i) + "   finished")
     # rpm_yaw_misalignment(begin_date, end_date, df)
     #run(begin_date, end_date,"speed_to_relative_avg", "power_curve_sanity_check", "rpm_yaw_misalignment", "all_turbines_yaw_misaligment",  hcnt=300)
-    run(begin_date, end_date, "all_turbines_yaw_misaligment", hcnt=300)
+    #run(begin_date, end_date, "all_turbines_yaw_misaligment", hcnt=300)
     #run(begin_date, end_date, "speed_to_relative_avg", hcnt=300)
     #run(begin_date, end_date, "power_curve_sanity_check", hcnt=300)
     #rpm_yaw_misalignment(begin_date, end_date)
+
+    #isolation_forest(begin_date, end_date)
+    #cluster_based(begin_date, end_date)
+    #dbscan(begin_date, end_date)
+    mahalanobis(begin_date, end_date)
 
